@@ -1,0 +1,8 @@
+{
+  "accelerated-jk.nvim": { "branch": "main", "commit": "1b3160724383e0180071753f958806859e2bc81a" },
+  "lazy.nvim": { "branch": "main", "commit": "57cce98dfdb2f2dd05a0567d89811e6d0505e13b" },
+  "onedark.nvim": { "branch": "main", "commit": "f971efa530ea9ca77ccc6850830e6c54e2de0b28" },
+  "plenary.nvim": { "branch": "master", "commit": "9d81624fbcedd3dd43b38d7e13a1e7b3f873d8cd" },
+  "popup.nvim": { "branch": "master", "commit": "b7404d35d5d3548a82149238289fa71f7f6de4ac" },
+  "telescope.nvim": { "branch": "master", "commit": "6ece9c462a6d03e56e2a1f4949bec1f5715c9827" }
+}
