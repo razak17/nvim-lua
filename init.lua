@@ -6,6 +6,7 @@ g.maplocalleader = ","
 vim.keymap.set("n", "<leader>q", "<cmd>q<CR>")
 vim.keymap.set("n", 'H', '<cmd>bprevious<CR>', { desc = 'previous buffer' })
 vim.keymap.set("n", 'L', '<cmd>bnext<CR>', { desc = 'next buffer' })
+vim.keymap.set("n", '<leader>c', '<cmd>bdel<CR>', { desc = 'delete buffer' })
 
 o.udir = vim.call("stdpath", "cache") .. "/undodir"
 o.viewdir = vim.call("stdpath", "cache") .. "/view"
