@@ -9,13 +9,16 @@ _G.map = vim.keymap.set
 local nnoremap = function(...)
 	map("n", ...)
 end
-map("n", "<leader>q", "<cmd>q<CR>")
+map("n", "<leader>qq", "<cmd>q<CR>")
 map("n", "H", "<cmd>bprevious<CR>", { desc = "previous buffer" })
 map("n", "L", "<cmd>bnext<CR>", { desc = "next buffer" })
 map("n", "<leader>c", "<cmd>bdel<CR>", { desc = "delete buffer" })
 -- Quick find/replace
 nnoremap("<leader>[", [[:%s/\<<C-r>=expand("<cword>")<CR>\>/]], { desc = "replace all" })
 nnoremap("<leader>]", [[:s/\<<C-r>=expand("<cword>")<CR>\>/]], { desc = "replace in line" })
+nnoremap("[<space>", [[<cmd>put! =repeat(nr2char(10), v:count1)<cr>'[]], {
+	desc = "add space above",
+})
 
 o.udir = vim.call("stdpath", "cache") .. "/undodir"
 o.viewdir = vim.call("stdpath", "cache") .. "/view"
@@ -57,53 +60,6 @@ require("lazy").setup({
 				require("onedark").setup(opts)
 			end,
 		},
-		-- {
-		-- 	"abeldekat/lazyflex.nvim",
-		-- 	import = "lazyflex.hook",
-		-- 	opts = {
-		-- 		enable_match = false,
-		-- 		kw = { "fzf-lua" },
-		-- 	},
-		-- },
-		"nvim-lua/popup.nvim",
-		"nvim-lua/plenary.nvim",
-
-		{
-			"nvim-telescope/telescope.nvim",
-			cmd = "Telescope",
-			keys = {
-				{ "<c-p>", "<cmd>Telescope find_files<cr>", desc = "find files" },
-			},
-			opts = {},
-			config = function(_, opts)
-				require("telescope").setup(opts)
-				require("telescope").load_extension("smart_open")
-			end,
-		},
-		{
-			"danielfalk/smart-open.nvim", -- use fork to get show_scores working
-			dependencies = {
-				"kkharji/sqlite.lua",
-				"nvim-telescope/telescope-fzy-native.nvim",
-			},
-		},
-
-		{
-			"ibhagwan/fzf-lua",
-			cmd = "FzfLua",
-			dependencies = { "nvim-tree/nvim-web-devicons" },
-			keys = {
-				{ "<leader>ff", "<Cmd>FzfLua files<CR>", desc = "find files" },
-				{ "<leader>fs", "<Cmd>FzfLua live_grep<CR>", desc = "live grep" },
-			},
-			config = function()
-				vim.api.nvim_set_hl(0, "FzfLuaNormal", { fg = "#ffff00", bg = "#ff0000" })
-				vim.api.nvim_set_hl(0, "FzfLuaBorder", { fg = "#ffff00", bg = "#ff0000" })
-
-				local fzf = require("fzf-lua")
-				fzf.setup()
-			end,
-		},
 		{
 			"xiyaowong/accelerated-jk.nvim",
 			event = "VeryLazy",
@@ -115,7 +71,7 @@ require("lazy").setup({
 		},
 		{
 			"nvim-treesitter/nvim-treesitter",
-			event = "VimEnter",
+			version = false, -- last release is way too old and doesn't work on Windows
 			build = ":TSUpdate",
 			config = function()
 				require("nvim-treesitter.configs").setup({
@@ -125,25 +81,53 @@ require("lazy").setup({
 				})
 			end,
 		},
-		-- {
-		--   'razak17/tailwind-fold.nvim',
-		--   opts = { min_chars = 5, symbol = '󱏿' },
-		--   ft = {
-		--     'html',
-		--     'svelte',
-		--     'astro',
-		--     'vue',
-		--     'typescriptreact',
-		--     'php',
-		--     'blade',
-		--     'eruby',
-		--     'htmldjango',
-		--     'templ',
-		--   },
-		-- },
+		{
+
+			"folke/snacks.nvim",
+			priority = 1000,
+			lazy = false,
+			opts = {
+				picker = {},
+			},
+			keys = {
+				{
+					"<leader>sp",
+					function()
+						Snacks.picker.lazy()
+					end,
+					desc = "Search for Plugin Spec",
+				},
+				{
+					"<C-p>",
+					function()
+						Snacks.picker.files({
+							finder = "files",
+							format = "file",
+							show_empty = true,
+							supports_live = true,
+							-- In case you want to override the layout for this keymap
+							-- layout = "vscode",
+						})
+					end,
+					desc = "Find Files",
+				},
+			},
+		},
+		{
+			"folke/persistence.nvim",
+			event = "BufReadPre",
+			opts = {},
+    -- stylua: ignore
+    keys = {
+      { "<leader>qs", function() require("persistence").load() end, desc = "Restore Session" },
+      { "<leader>qS", function() require("persistence").select() end,desc = "Select Session" },
+      { "<leader>ql", function() require("persistence").load({ last = true }) end, desc = "Restore Last Session" },
+      { "<leader>qd", function() require("persistence").stop() end, desc = "Don't Save Current Session" },
+    },
+		},
 		{
 			"chrisgrieser/nvim-origami",
-			event = "BufReadPost",
+			-- event = "BufReadPost",
 			keys = {
 				{
 					"<BS>",
@@ -159,13 +143,13 @@ require("lazy").setup({
 			"NeogitOrg/neogit",
 			cmd = "Neogit",
 			dependencies = { "nvim-lua/plenary.nvim", "sindrets/diffview.nvim" },
-  -- stylua: ignore
-  keys = {
-    { '<localleader>gs', function() require('neogit').open() end, desc = 'open status buffer', },
-    { '<localleader>gc', function() require('neogit').open({ 'commit' }) end, desc = 'open commit buffer', },
-    { '<localleader>gl', function() require('neogit.popups.pull').create() end, desc = 'open pull popup', },
-    { '<localleader>gp', function() require('neogit.popups.push').create() end, desc = 'open push popup', },
-  },
+		-- stylua: ignore
+		keys = {
+		  { '<localleader>gs', function() require('neogit').open() end, desc = 'open status buffer', },
+		  { '<localleader>gc', function() require('neogit').open({ 'commit' }) end, desc = 'open commit buffer', },
+		  { '<localleader>gl', function() require('neogit.popups.pull').create() end, desc = 'open pull popup', },
+		  { '<localleader>gp', function() require('neogit.popups.push').create() end, desc = 'open push popup', },
+		},
 			opts = {
 				disable_signs = false,
 				disable_hint = true,
@@ -182,14 +166,6 @@ require("lazy").setup({
 				},
 			},
 		},
-		-- {
-		-- 	"ErichDonGubler/lsp_lines.nvim",
-		-- 	event = "LspAttach",
-		-- 	config = function()
-		-- 		require("lsp_lines").setup()
-		-- 	end,
-		-- },
-
 		{
 			"mikesmithgh/kitty-scrollback.nvim",
 			enabled = true,

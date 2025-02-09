@@ -15,7 +15,7 @@ end
 vim.opt.rtp:prepend(lazy_path)
 
 require("lazy").setup({
-	spec = { import = "vscode.plugins" },
+	spec = { import = "ar.vscode.plugins" },
 
 	defaults = { lazy = true },
 	change_detection = { notify = false },
