@@ -8,6 +8,7 @@ _G.map = vim.keymap.set
 
 if vim.g.neovide then require('ar.neovide') end
 
+require('ar.settings')
 require('ar.lazy')
 require('ar.mappings')
 require('ar.autocommands')
