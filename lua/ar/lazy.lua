@@ -20,6 +20,12 @@ require("lazy").setup({
 		patterns = { "razak17" },
 		fallback = true,
 	},
+  checker = {
+    enabled = true,
+    concurrency = 30,
+    notify = false,
+    frequency = 3600,
+  },
 	ui = { border = "single" },
 	performance = { enabled = true },
 })
