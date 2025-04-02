@@ -52,7 +52,11 @@ return {
     priority = 1000,
     lazy = false,
     opts = {
-      picker = {},
+      picker = {
+        layouts = {
+          telescope = { reverse = false },
+        },
+      },
     },
     keys = {
       {
@@ -64,12 +68,28 @@ return {
         '<C-p>',
         function()
           Snacks.picker.files({
+            matcher = {
+              cwd_bonus = true, -- boost cwd matches
+              frecency = true, -- use frecency boosting
+              sort_empty = true, -- sort even when the filter is empty
+            },
             finder = 'files',
             format = 'file',
             show_empty = true,
             supports_live = true,
-            -- In case you want to override the layout for this keymap
-            -- layout = "vscode",
+            layout = 'telescope',
+              -- stylua: ignore start
+            args = {
+              '--exclude', '**/.git/**',
+              '--exclude', '**/.next/**',
+              '--exclude', '**/node_modules/**',
+              '--exclude', '**/build/**',
+              '--exclude', '**/tmp/**',
+              '--exclude', '**/env/**',
+              '--exclude', '**/__pycache__/**',
+              '--exclude', '**/.mypy_cache/**',
+              '--exclude', '**/.pytest_cache/**',
+            },
           })
         end,
         desc = 'Find Files',
