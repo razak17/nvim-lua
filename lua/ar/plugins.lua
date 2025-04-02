@@ -6,6 +6,16 @@ function join_paths(...)
   return result
 end
 
+local function has_words_before()
+  local line, col = (unpack or table.unpack)(vim.api.nvim_win_get_cursor(0))
+  return col ~= 0
+    and api
+        .nvim_buf_get_lines(0, line - 1, line, true)[1]
+        :sub(col, col)
+        :match('%s')
+      == nil
+end
+
 return {
   {
     'razak17/onedark.nvim',
@@ -230,8 +240,10 @@ return {
     version = '*', -- REQUIRED `version` needed to download pre-built binary
     opts_extend = {
       'sources.completion.enabled_providers',
-      'sources.compat',
+      -- 'sources.compat',
       'sources.default',
+      'cmdline.sources',
+      'term.sources',
     },
     opts = {
       enabled = function()
@@ -239,6 +251,8 @@ return {
           'TelescopePrompt',
           'minifiles',
           'snacks_picker_input',
+          'neo-tree-popup',
+          'dropbar_menu_fzf',
         }
         local filetype = vim.bo[0].filetype
         return not vim.tbl_contains(ignored_filetypes, filetype)
@@ -247,34 +261,51 @@ return {
         use_nvim_cmp_as_default = true,
         nerd_font_variant = 'mono',
       },
+      signature = { window = { border = border } },
+      cmdline = {
+        keymap = {
+          preset = 'cmdline',
+          -- recommended, as the default keymap will only show and select the next item
+          ['<Tab>'] = { 'show', 'select_next' },
+          ['<S-Tab>'] = { 'show', 'select_prev' },
+          ['<CR>'] = { 'accept_and_enter', 'fallback' },
+        },
+        enabled = true,
+        completion = {
+          ghost_text = { enabled = false },
+          list = { selection = { preselect = false, auto_insert = true } },
+          menu = {
+            auto_show = function(ctx)
+              local type = vim.fn.getcmdtype()
+              if ctx.mode == 'cmdline' then
+                return type == ':' or type == '@'
+              end
+              return false
+            end,
+          },
+        },
+        sources = function()
+          local type = vim.fn.getcmdtype()
+          if type == '/' or type == '?' then return { 'buffer' } end
+          if type == ':' then return { 'cmdline' } end
+          return {}
+        end,
+      },
       completion = {
         accept = {
           -- experimental auto-brackets support
           auto_brackets = { enabled = true },
         },
+        -- Recommended to avoid unnecessary request
+        trigger = { prefetch_on_insert = false },
         menu = {
+          border = border,
           winblend = 0,
           winhighlight = 'NormalFloat:NormalFloat,CursorLine:PmenuSel,NormalFloat:NormalFloat',
           draw = {
             columns = {
-              { 'item_idx' },
-              { 'seperator' },
               { 'label', gap = 1 },
               { 'kind_icon', gap = 2, 'source_name' },
-            },
-            components = {
-              item_idx = {
-                text = function(ctx)
-                  return ctx.idx == 10 and '0'
-                    or ctx.idx >= 10 and ' '
-                    or tostring(ctx.idx)
-                end,
-                highlight = 'comment',
-              },
-              seperator = {
-                text = function() return '│' end,
-                highlight = 'comment',
-              },
             },
             treesitter = { 'lsp' },
           },
@@ -282,25 +313,10 @@ return {
         documentation = {
           auto_show = true,
           auto_show_delay_ms = 200,
+          window = { border = border },
         },
         ghost_text = { enabled = false },
-        list = {
-          selection = {
-            preselect = function(ctx) return ctx.mode ~= 'cmdline' end,
-            auto_insert = function(ctx) return ctx.mode == 'cmdline' end,
-          },
-        },
-      },
-      snippets = {
-        preset = 'luasnip',
-        expand = function(snippet) require('luasnip').lsp_expand(snippet) end,
-        active = function(filter)
-          if filter and filter.direction then
-            return require('luasnip').jumpable(filter.direction)
-          end
-          return require('luasnip').in_snippet()
-        end,
-        jump = function(direction) require('luasnip').jump(direction) end,
+        list = { selection = { preselect = false, auto_insert = true } },
       },
       sources = {
         default = function()
@@ -329,19 +345,32 @@ return {
         providers = {
           lsp = {
             name = '[LSP]',
-            min_keyword_length = 2,
-            score_offset = 90,
+            score_offset = 35,
           },
-          path = { name = '[PATH]' },
+          path = {
+            name = '[PATH]',
+            score_offset = 25,
+            opts = { show_hidden_files_by_default = true },
+          },
           buffer = { name = '[BUF]' },
-          cmdline = { name = '[CMD]' },
+          cmdline = {
+            name = '[CMD]',
+            min_keyword_length = function(ctx)
+              -- when typing a command, only show when the keyword is 3 characters or longer
+              if
+                ctx.mode == 'cmdline' and string.find(ctx.line, ' ') == nil
+              then
+                return 3
+              end
+              return 0
+            end,
+          },
           snippets = {
             enabled = true,
             name = '[SNIP]',
             max_items = 15,
-            min_keyword_length = 2,
             module = 'blink.cmp.sources.snippets',
-            score_offset = 85,
+            score_offset = 20,
           },
           ripgrep = {
             module = 'blink-ripgrep',
@@ -356,62 +385,55 @@ return {
           },
           emoji = {
             module = 'blink-emoji',
-            name = 'Emoji',
+            name = '[EMOJI]',
             score_offset = 15,
             min_keyword_length = 2,
             opts = { insert = true },
           },
         },
-        cmdline = function()
-          local type = vim.fn.getcmdtype()
-          if type == '/' or type == '?' then return { 'buffer' } end
-          if type == ':' then return { 'cmdline' } end
-          return {}
-        end,
       },
       keymap = {
         preset = 'default',
-        ['<Tab>'] = { 'select_next', 'snippet_forward', 'fallback' },
-        ['<S-Tab>'] = { 'select_prev', 'snippet_backward', 'fallback' },
         ['<CR>'] = { 'accept', 'fallback' },
         ['<C-l>'] = { 'accept', 'fallback' },
-        ['<C-y>'] = { 'select_and_accept' },
+        ['<C-n>'] = { 'select_next', 'show' },
+        ['<C-p>'] = { 'select_prev', 'show' },
+        ['<C-j>'] = { 'select_next', 'fallback' },
+        ['<C-k>'] = { 'select_prev', 'fallback' },
         ['<C-space>'] = {
           'show',
           'show_documentation',
           'hide_documentation',
           'fallback',
         },
-        ['<A-1>'] = {
-          function(cmp) cmp.accept({ index = 1 }) end,
+        ['<Tab>'] = {
+          'select_next',
+          'snippet_forward',
+          function(cmp)
+            if has_words_before() or api.nvim_get_mode().mode == 'c' then
+              return cmp.show()
+            end
+          end,
+          'fallback',
         },
-        ['<A-2>'] = {
-          function(cmp) cmp.accept({ index = 2 }) end,
+        ['<S-Tab>'] = {
+          'select_prev',
+          'snippet_backward',
+          function(cmp)
+            if api.nvim_get_mode().mode == 'c' then return cmp.show() end
+          end,
+          'fallback',
         },
-        ['<A-3>'] = {
-          function(cmp) cmp.accept({ index = 3 }) end,
-        },
-        ['<A-4>'] = {
-          function(cmp) cmp.accept({ index = 4 }) end,
-        },
-        ['<A-5>'] = {
-          function(cmp) cmp.accept({ index = 5 }) end,
-        },
-        ['<A-6>'] = {
-          function(cmp) cmp.accept({ index = 6 }) end,
-        },
-        ['<A-7>'] = {
-          function(cmp) cmp.accept({ index = 7 }) end,
-        },
-        ['<A-8>'] = {
-          function(cmp) cmp.accept({ index = 8 }) end,
-        },
-        ['<A-9>'] = {
-          function(cmp) cmp.accept({ index = 9 }) end,
-        },
-        ['<A-0>'] = {
-          function(cmp) cmp.accept({ index = 10 }) end,
-        },
+        ['<A-1>'] = { function(cmp) cmp.accept({ index = 1 }) end },
+        ['<A-2>'] = { function(cmp) cmp.accept({ index = 2 }) end },
+        ['<A-3>'] = { function(cmp) cmp.accept({ index = 3 }) end },
+        ['<A-4>'] = { function(cmp) cmp.accept({ index = 4 }) end },
+        ['<A-5>'] = { function(cmp) cmp.accept({ index = 5 }) end },
+        ['<A-6>'] = { function(cmp) cmp.accept({ index = 6 }) end },
+        ['<A-7>'] = { function(cmp) cmp.accept({ index = 7 }) end },
+        ['<A-8>'] = { function(cmp) cmp.accept({ index = 8 }) end },
+        ['<A-9>'] = { function(cmp) cmp.accept({ index = 9 }) end },
+        ['<A-0>'] = { function(cmp) cmp.accept({ index = 10 }) end },
       },
     },
     config = function(_, opts) require('blink.cmp').setup(opts) end,
